@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import "./App.css";
-import Coin from "./Coin";
+import React, { useEffect, useMemo } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchCoins } from './features/crypto/cryptoSlice';
 
 function App() {
   const [coins, setCoins] = useState([]);
@@ -22,9 +21,11 @@ function App() {
     setSearch(e.target.value);
   };
 
-  const filteredCoins = coins.filter((coin) =>
-    coin.name.toLowerCase().includes(search.toLowerCase()) || coin.symbol.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredCoins = useMemo(() => 
+    coins.filter(c => 
+      c.name.toLowerCase().includes(search) || c.symbol.toLowerCase().includes(search)
+    ), [coins, search]
+  );  
 
   return (
     <div className="App">
@@ -87,9 +88,6 @@ function App() {
       )}
       </div>
       <div className="empty-div"></div>
-      <footer>
-        For more amazing projects, you can visit my Github Profile at <a href="https://www.github.com/alimazhar4/" target="_blank" rel="noreferrer">github.com/alimazhar4</a>
-      </footer>
     </div>
   );
 }
