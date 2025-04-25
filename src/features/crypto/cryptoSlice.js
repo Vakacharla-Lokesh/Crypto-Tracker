@@ -1,24 +1,28 @@
 // src/features/crypto/cryptoSlice.js
 import { createSlice } from '@reduxjs/toolkit'; // JS import of createSlice :contentReference[oaicite:3]{index=3}
 
-const initialState = {
-  coins: [],
-};
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+
+export const fetchCoins = createAsyncThunk('crypto/fetchCoins', async () => {
+  const res = await axios.get(/* your new API endpoint */);
+  return res.data;
+});
 
 const cryptoSlice = createSlice({
   name: 'crypto',
-  initialState,
-  reducers: {
-    setCoins(state, action) {
-      state.coins = action.payload;
-    },
-    updateCoin(state, action) {
-      const { id, ...changes } = action.payload;
-      const coin = state.coins.find(c => c.id === id);
-      if (coin) {
-        Object.assign(coin, changes);
-      }
-    },
+  initialState: { coins: [], status: 'idle', error: null },
+  reducers: { updateCoin(state, action) { /* ... */ } },
+  extraReducers: builder => {
+    builder
+      .addCase(fetchCoins.pending, state => { state.status = 'loading'; })
+      .addCase(fetchCoins.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.coins = action.payload;
+      })
+      .addCase(fetchCoins.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.error.message;
+      });
   },
 });
 
