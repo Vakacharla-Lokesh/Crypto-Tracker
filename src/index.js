@@ -1,12 +1,12 @@
-// src/index.js
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { Provider } from 'react-redux';           // JS binding for React-Redux :contentReference[oaicite:10]{index=10}
-import App from './App';
+import { Provider } from 'react-redux';
+import App from './App';               // ← corrected path
 import { store } from './app/store';
 import mockSocket from './utils/mockSocket';
 
-mockSocket.start();                               // Start mock updates on load
+// Start simulated updates
+mockSocket.start();
 
 ReactDOM.render(
   <Provider store={store}>

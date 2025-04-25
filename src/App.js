@@ -1,54 +1,54 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { fetchCoins } from './features/crypto/cryptoSlice';
+// src/App.js
+
+import React, { useState, useEffect, useMemo } from 'react';       // React Hooks for state, effects, memoization :contentReference[oaicite:0]{index=0}
+import axios from 'axios';                                         // HTTP client for fetching data :contentReference[oaicite:1]{index=1}
+import './App.css';                                                // Your styles
+import Coin from './Coin';                                         // Coin card component
 
 function App() {
-  const [coins, setCoins] = useState([]);
-  const [search, setSearch] = useState("");
+  const [coins, setCoins] = useState([]);                          // Local state for fetched coins
+  const [search, setSearch] = useState('');                       // Search input
 
   useEffect(() => {
+    // Fetch top 200 coins once on mount
     axios
       .get(
-        ""
+        'https://api.coingecko.com/api/v3/coins/markets',
+        {
+          params: {
+            vs_currency: 'usd',
+            order: 'market_cap_desc',
+            per_page: 200,
+            page: 1,
+            sparkline: false,
+          },
+        }
       )
-      .then((res) => {
-        setCoins(res.data);
-      })
-      .catch((error) => console.log(error));
-  });
+      .then(res => setCoins(res.data))
+      .catch(err => console.error('Fetch error:', err));
+  }, []);                                                        // ← empty deps array ensures this runs only once :contentReference[oaicite:2]{index=2}
 
-  const handleChange = (e) => {
-    setSearch(e.target.value);
-  };
+  const handleChange = e => setSearch(e.target.value);
 
   const filteredCoins = useMemo(() => 
-    coins.filter(c => 
-      c.name.toLowerCase().includes(search) || c.symbol.toLowerCase().includes(search)
-    ), [coins, search]
-  );  
+    coins.filter(c =>
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.symbol.toLowerCase().includes(search.toLowerCase())
+    ),
+    [coins, search]
+  );                                                             // Memoize filter for performance :contentReference[oaicite:3]{index=3}
 
   return (
     <div className="App">
       <h1 className="page-title">Live Crypto Price Tracker</h1>
-      <p className="credentials">
-        By{" "}
-        <a
-          href="https://www.github.com/alimazhar4"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Ali Mazhar
-        </a>
-      </p>
       <div className="search-bar">
-        <form>
-          <input
-            type="text"
-            placeholder="Search Crypto"
-            className="coin-input"
-            onChange={handleChange}
-          ></input>
-        </form>
+        <input
+          type="text"
+          placeholder="Search Crypto"
+          className="coin-input"
+          value={search}
+          onChange={handleChange}
+        />
       </div>
 
       <div className="center table-headings">
@@ -65,14 +65,15 @@ function App() {
       </div>
 
       <div className="coin-data-display">
-      { filteredCoins.length < 1 ? ( 
-        <div className="no-search-result"> 
-        <h3>No Search Results Found!</h3> 
-        <p>Please check you search spellings and remember this tracker only keeps record of the top 200 cryptocurrencies</p>
-        </div>
-      ): ( 
-        filteredCoins.map((coin) => {
-          return (
+        {filteredCoins.length === 0 ? (
+          <div className="no-search-result">
+            <h3>No Search Results Found!</h3>
+            <p>
+              Please check your spelling—this tracker only shows the top 200 coins.
+            </p>
+          </div>
+        ) : (
+          filteredCoins.map(coin => (
             <Coin
               key={coin.id}
               name={coin.name}
@@ -83,11 +84,9 @@ function App() {
               priceChange={coin.price_change_percentage_24h}
               marketCap={coin.market_cap}
             />
-          );
-        })
-      )}
+          ))
+        )}
       </div>
-      <div className="empty-div"></div>
     </div>
   );
 }

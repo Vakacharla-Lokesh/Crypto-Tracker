@@ -1,51 +1,73 @@
-import React, { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
-import axios from 'axios';
-import { setCoins } from '../features/crypto/cryptoSlice';
+// src/components/CryptoTable.jsx
+import React, { useEffect, useState, useMemo } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchCoins } from '../features/crypto/cryptoSlice';
 
-const CryptoTable = () => {
+export default function CryptoTable() {
   const dispatch = useDispatch();
+  const { coins, status, error } = useSelector(state => state.crypto);
+  const [search, setSearch] = useState('');
 
+  // Fetch coins once on mount
   useEffect(() => {
-    const fetchCryptoData = async () => {
-      try {
-        const response = await axios.get(
-          'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest',
-          {
-            params: {
-              start: '1',
-              limit: '5',
-              convert: 'USD',
-            },
-            headers: {
-              'X-CMC_PRO_API_KEY': 'YOUR_API_KEY_HERE',
-            },
-          }
-        );
-        const coinsData = response.data.data.map((coin) => ({
-          id: coin.id,
-          name: coin.name,
-          symbol: coin.symbol,
-          price: coin.quote.USD.price,
-          percent_change_1h: coin.quote.USD.percent_change_1h,
-          percent_change_24h: coin.quote.USD.percent_change_24h,
-          percent_change_7d: coin.quote.USD.percent_change_7d,
-          market_cap: coin.quote.USD.market_cap,
-          volume_24h: coin.quote.USD.volume_24h,
-          circulating_supply: coin.circulating_supply,
-          max_supply: coin.max_supply,
-          logo: `https://s2.coinmarketcap.com/static/img/coins/64x64/${coin.id}.png`,
-        }));
-        dispatch(setCoins(coinsData));
-      } catch (error) {
-        console.error('Error fetching data from CoinMarketCap:', error);
-      }
-    };
-
-    fetchCryptoData();
+    dispatch(fetchCoins());
   }, [dispatch]);
 
-  // ... rest of your component
-};
+  // Memoize filtered list
+  const filteredCoins = useMemo(() => {
+    const term = search.toLowerCase();
+    return coins.filter(
+      c => c.name.toLowerCase().includes(term) || c.symbol.toLowerCase().includes(term)
+    );
+  }, [coins, search]);
 
-export default CryptoTable;
+  if (status === 'loading') return <p>Loading...</p>;
+  if (error) return <p>Error: {error}</p>;
+
+  return (
+    <div>
+      <input
+        type="text"
+        placeholder="Search Crypto"
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+      />
+      <table className="crypto-table">
+        <thead>
+          <tr>
+            <th>Logo</th><th>Name</th><th>Symbol</th><th>Price</th>
+            <th>1h%</th><th>24h%</th><th>7d%</th><th>Market Cap</th>
+            <th>24h Volume</th><th>Circulating</th><th>Max</th><th>7D Chart</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredCoins.map(coin => (
+            <tr key={coin.id}>
+              <td><img src={coin.logo} alt={coin.symbol} width="24" /></td>
+              <td>{coin.name}</td>
+              <td>{coin.symbol.toUpperCase()}</td>
+              <td>${coin.price.toFixed(2)}</td>
+              <td className={coin.percent1h >= 0 ? 'pos' : 'neg'}>
+                {coin.percent1h.toFixed(2)}%
+              </td>
+              <td className={coin.percent24h >= 0 ? 'pos' : 'neg'}>
+                {coin.percent24h.toFixed(2)}%
+              </td>
+              <td className={coin.percent7d >= 0 ? 'pos' : 'neg'}>
+                {coin.percent7d.toFixed(2)}%
+              </td>
+              <td>${coin.marketCap.toLocaleString()}</td>
+              <td>${coin.volume24h.toLocaleString()}</td>
+              <td>{coin.circulatingSupply.toLocaleString()}</td>
+              <td>{coin.maxSupply?.toLocaleString() || '—'}</td>
+              <td>
+                {/* Placeholder for sparkline, replace with actual sparkline component */}
+                <img src={`data:image/svg+xml;utf8,<svg>…</svg>`} alt="7d chart" />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
