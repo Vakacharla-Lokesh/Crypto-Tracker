@@ -1,32 +1,21 @@
 // src/App.js
-
-import React, { useState, useEffect, useMemo } from 'react';       // React Hooks for state, effects, memoization :contentReference[oaicite:0]{index=0}
-import axios from 'axios';                                         // HTTP client for fetching data :contentReference[oaicite:1]{index=1}
-import './App.css';                                                // Your styles
-import Coin from './Coin';                                         // Coin card component
+import React, { useState, useEffect, useMemo } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import './App.css';
+import Coin from './Coin';
+import { fetchCoins } from './features/crypto/cryptoSlice';
 
 function App() {
-  const [coins, setCoins] = useState([]);                          // Local state for fetched coins
-  const [search, setSearch] = useState('');                       // Search input
+  const dispatch = useDispatch();
+  const { coins, status, error } = useSelector(state => state.crypto);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
-    // Fetch top 200 coins once on mount
-    axios
-      .get(
-        'https://api.coingecko.com/api/v3/coins/markets',
-        {
-          params: {
-            vs_currency: 'usd',
-            order: 'market_cap_desc',
-            per_page: 200,
-            page: 1,
-            sparkline: false,
-          },
-        }
-      )
-      .then(res => setCoins(res.data))
-      .catch(err => console.error('Fetch error:', err));
-  }, []);                                                        // ← empty deps array ensures this runs only once :contentReference[oaicite:2]{index=2}
+    // Fetch coins when component mounts if we don't have them yet
+    if (status === 'idle') {
+      dispatch(fetchCoins());
+    }
+  }, [status, dispatch]);
 
   const handleChange = e => setSearch(e.target.value);
 
@@ -36,11 +25,19 @@ function App() {
       c.symbol.toLowerCase().includes(search.toLowerCase())
     ),
     [coins, search]
-  );                                                             // Memoize filter for performance :contentReference[oaicite:3]{index=3}
+  );
+
+  if (status === 'loading') return <div className="App"><h1 className="page-title">Loading...</h1></div>;
+  if (error) return <div className="App"><h1 className="page-title">Error: {error}</h1></div>;
 
   return (
     <div className="App">
       <h1 className="page-title">Live Crypto Price Tracker</h1>
+      <div className="credentials">
+        <a href="https://coinmarketcap.com/" target="_blank" rel="noopener noreferrer">
+          Powered by CoinMarketCap
+        </a>
+      </div>
       <div className="search-bar">
         <input
           type="text"
@@ -87,6 +84,12 @@ function App() {
           ))
         )}
       </div>
+      
+      <div className="empty-div"></div>
+      <footer>
+        Crypto Tracker - Live Price Updates
+        <a href="https://coinmarketcap.com/" target="_blank" rel="noopener noreferrer"> - CoinMarketCap</a>
+      </footer>
     </div>
   );
 }
